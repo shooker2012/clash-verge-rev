@@ -245,6 +245,16 @@ class DelayManager {
     return update ? update.delay : -1
   }
 
+  hasFreshDelay(name: string, group: string, maxAge = 120_000) {
+    const update = this.getDelayUpdate(name, group)
+    return Boolean(
+      update &&
+        update.delay >= 0 &&
+        update.delay < 1e6 &&
+        Date.now() - update.updatedAt <= maxAge,
+    )
+  }
+
   getDelayFix(member: ResolvedProxyMember, group: string) {
     if (member.kind === 'unresolved') return -1
     const details = memberDetails(member)
@@ -340,20 +350,23 @@ class DelayManager {
     group: string,
     timeout: number,
     concurrency = 36,
+    stopped?: () => boolean,
   ) {
     debugLog(
       `[DelayManager] 批量测试延迟开始，组: ${group}, 数量: ${proxies.length}, 并发数: ${concurrency}`,
     )
     const names = proxies.map((member) => member.ref.name)
     this.activeBatches.set(group, (this.activeBatches.get(group) ?? 0) + 1)
-    names.forEach((name) => {
-      this.setDelay(name, group, -2)
-    })
+    if (!stopped)
+      names.forEach((name) => {
+        this.setDelay(name, group, -2)
+      })
 
     let index = 0
     const startTime = Date.now()
 
     const help = async (): Promise<void> => {
+      if (stopped?.()) return
       const currMember = proxies[index++]
       if (!currMember) return
       const currName = currMember.ref.name

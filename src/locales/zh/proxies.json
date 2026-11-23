@@ -6,6 +6,8 @@
       "direct": "直连"
     },
     "actions": {
+      "testNodeDelay": "测试延迟",
+      "testNodeSpeed": "测试下载速度",
       "toggleChain": "链式代理",
       "connect": "连接",
       "disconnect": "断开",
@@ -28,11 +30,27 @@
       "delayCheckReset": "进行延迟测试，以取消固定",
       "nodeCount": "{{count}} 个节点"
     },
+    "speed": {
+      "queued": "待测试",
+      "testing": "测速中",
+      "skipDelay": "已跳过",
+      "skipStopped": "已跳过（已停止）",
+      "failed": "测速失败",
+      "delay": "检测延迟",
+      "download": "测速中",
+      "stopping": "正在停止",
+      "stopped": "已停止",
+      "finished": "已完成",
+      "skippedCount": "跳过 {{count}}"
+    },
     "tooltips": {
       "locate": "当前节点",
       "delayCheck": "延迟测试",
+      "speedCheck": "下载速度测试",
       "sortDefault": "默认排序",
       "sortDelay": "按延迟排序",
+      "sortSpeed": "按下载速度排序（从高到低）",
+      "stopSpeed": "停止测速",
       "sortName": "按名称排序",
       "delayCheckUrl": "延迟测试链接",
       "showBasic": "隐藏节点细节",

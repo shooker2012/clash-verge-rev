@@ -93,6 +93,9 @@ verge_registry! {
     auto_check_update => NoEffect;
     default_latency_test => NoEffect;
     default_latency_timeout => NoEffect;
+    default_speed_test => NoEffect;
+    speed_test_duration => NoEffect;
+    speed_test_max_bytes => NoEffect;
     enable_auto_delay_detection => NoEffect;
     auto_delay_detection_interval_minutes => NoEffect;
     enable_builtin_enhanced => NoEffect;

@@ -6,6 +6,8 @@
       "direct": "Direct"
     },
     "actions": {
+      "testNodeDelay": "Test latency",
+      "testNodeSpeed": "Test download speed",
       "toggleChain": "Chain Proxy",
       "connect": "Connect",
       "disconnect": "Disconnect",
@@ -28,11 +30,27 @@
       "delayCheckReset": "Delay check to cancel fixed",
       "nodeCount": "{{count}} nodes"
     },
+    "speed": {
+      "queued": "Queued",
+      "testing": "Testing",
+      "skipDelay": "Skipped",
+      "skipStopped": "Skipped (stopped)",
+      "failed": "Failed",
+      "delay": "Checking latency",
+      "download": "Testing",
+      "stopping": "Stopping",
+      "stopped": "Stopped",
+      "finished": "Finished",
+      "skippedCount": "Skipped {{count}}"
+    },
     "tooltips": {
       "locate": "locate",
       "delayCheck": "Delay check",
+      "speedCheck": "Download speed test",
       "sortDefault": "Sort by default",
       "sortDelay": "Sort by delay",
+      "sortSpeed": "Sort by download speed (fastest first)",
+      "stopSpeed": "Stop speed test",
       "sortName": "Sort by name",
       "delayCheckUrl": "Delay check URL",
       "showBasic": "Proxy basic",

@@ -126,6 +126,31 @@ pub async fn test_delay(url: std::string::String) -> CmdResult<u32> {
 
 #[tauri::command]
 #[specta::specta]
+pub fn stop_download_speed(run_id: u32) {
+    SPEED_CANCEL.send_replace(run_id);
+}
+
+static SPEED_CANCEL: std::sync::LazyLock<tokio::sync::watch::Sender<u32>> =
+    std::sync::LazyLock::new(|| tokio::sync::watch::channel(0).0);
+
+#[tauri::command]
+#[specta::specta]
+pub async fn test_download_speed(
+    url: std::string::String,
+    duration_secs: u64,
+    max_bytes: u64,
+    run_id: u32,
+) -> CmdResult<u64> {
+    let mut cancelled = SPEED_CANCEL.subscribe();
+    tokio::select! {
+        biased;
+        _ = cancelled.wait_for(|id| *id == run_id) => Err("Download stopped".into()),
+        result = feat::test_download_speed(url.into(), duration_secs, max_bytes) => result.stringify_err(),
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
 pub async fn save_dns_config(dns_config: crate::ipc::YamlMapping) -> CmdResult {
     use crate::utils::dirs;
     use tokio::fs;

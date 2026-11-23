@@ -7,15 +7,27 @@ import {
   alpha,
   Box,
   ListItemText,
+  Menu,
+  MenuItem,
   ListItemButton,
   Typography,
   styled,
   Chip,
   Tooltip,
 } from '@mui/material'
-import { memo, useId, useMemo } from 'react'
+import {
+  memo,
+  useId,
+  useMemo,
+  useCallback,
+  useState,
+  useSyncExternalStore,
+} from 'react'
 import { useTranslation } from 'react-i18next'
 
+import speedManager from '@/services/speed'
+import delayManager from '@/services/delay'
+import { isInteractableMember } from '@/types/proxy-view'
 import { useIconCache } from '@/hooks/use-icon-cache'
 import { useVerge } from '@/hooks/use-verge'
 import { useThemeMode } from '@/services/states'
@@ -35,6 +47,7 @@ interface RenderProps {
   isChainMode?: boolean
   onLocation: (group: IRenderItem['group']) => void
   onCheckAll: (groupName: string) => void
+  onCheckSpeed: (groupName: string, nodeName?: string) => void
   onHeadState: (groupName: string, patch: Partial<HeadState>) => void
   onChangeProxy: (
     group: IRenderItem['group'],
@@ -50,6 +63,7 @@ export const ProxyRender = memo(function ProxyRender(props: RenderProps) {
     stickyed = false,
     onLocation,
     onCheckAll,
+    onCheckSpeed,
     onHeadState,
     onChangeProxy,
     onGroupToggle,
@@ -69,6 +83,25 @@ export const ProxyRender = memo(function ProxyRender(props: RenderProps) {
     enabled: enable_group_icon,
   })
 
+  const [target, setTarget] = useState<{
+    member: ResolvedProxyMember
+    groupName: string
+    left: number
+    top: number
+  } | null>(null)
+  const openNodeMenu = useCallback(
+    (event: React.MouseEvent, node: ResolvedProxyMember) => {
+      event.preventDefault()
+      event.stopPropagation()
+      setTarget({
+        member: node,
+        groupName: group.name,
+        left: event.clientX,
+        top: event.clientY,
+      })
+    },
+    [group.name],
+  )
   const showType = headState?.showType
   const memberColItemsMemo = useMemo(() => {
     if (type !== 4 || !memberCol) {
@@ -82,10 +115,11 @@ export const ProxyRender = memo(function ProxyRender(props: RenderProps) {
         member={occurrence.member}
         selected={group.now === occurrence.member.ref.name}
         showType={showType}
+        onNodeMenu={openNodeMenu}
         onClick={(nextMember) => onChangeProxy(group, nextMember)}
       />
     ))
-  }, [type, memberCol, item.key, group, showType, onChangeProxy])
+  }, [type, memberCol, item.key, group, showType, onChangeProxy, openNodeMenu])
 
   if (type === 0) {
     const nameBlock = (
@@ -203,6 +237,7 @@ export const ProxyRender = memo(function ProxyRender(props: RenderProps) {
           headState={headState!}
           onLocation={() => onLocation(group)}
           onCheckDelay={() => onCheckAll(group.name)}
+          onCheckSpeed={() => onCheckSpeed(group.name)}
           onHeadState={(p) => onHeadState(group.name, p)}
         />
         {!toolsOnLeft && proxyCount}
@@ -252,21 +287,44 @@ export const ProxyRender = memo(function ProxyRender(props: RenderProps) {
         headState={headState!}
         onLocation={() => onLocation(group)}
         onCheckDelay={() => onCheckAll(group.name)}
+        onCheckSpeed={() => onCheckSpeed(group.name)}
         onHeadState={(p) => onHeadState(group.name, p)}
       />
     )
   }
 
+  const menu = target &&
+    target.groupName === group.name &&
+    isInteractableMember(target.member) && (
+      <NodeMenu
+        position={target}
+        onClose={() => setTarget(null)}
+        canTestSpeed={group.members.length > 0}
+        onDelay={() => {
+          if (isInteractableMember(target.member))
+            void delayManager.checkDelay(
+              target.member,
+              group.name,
+              verge?.default_latency_timeout || 10000,
+            )
+        }}
+        onSpeed={() => onCheckSpeed(group.name, target.member.ref.name)}
+      />
+    )
   if (type === 2) {
     return (
-      <ProxyItem
-        group={group}
-        member={member!.member}
-        selected={group.now === member?.member.ref.name}
-        showType={headState?.showType}
-        sx={{ py: 0, pl: 2 }}
-        onClick={(nextMember) => onChangeProxy(group, nextMember)}
-      />
+      <>
+        <ProxyItem
+          group={group}
+          member={member!.member}
+          selected={group.now === member?.member.ref.name}
+          showType={headState?.showType}
+          sx={{ py: 0, pl: 2 }}
+          onNodeMenu={openNodeMenu}
+          onClick={(nextMember) => onChangeProxy(group, nextMember)}
+        />
+        {menu}
+      </>
     )
   }
 
@@ -303,12 +361,60 @@ export const ProxyRender = memo(function ProxyRender(props: RenderProps) {
         }}
       >
         {memberColItemsMemo}
+        {menu}
       </Box>
     )
   }
 
   return null
 })
+
+function NodeMenu({
+  position,
+  onClose,
+  onDelay,
+  onSpeed,
+  canTestSpeed,
+}: {
+  position: { top: number; left: number }
+  onClose: () => void
+  onDelay: () => void
+  onSpeed: () => void
+  canTestSpeed: boolean
+}) {
+  const { t } = useTranslation()
+  const active = useSyncExternalStore(
+    speedManager.subscribe,
+    speedManager.activeGroup,
+  )
+  return (
+    <Menu
+      open
+      anchorReference="anchorPosition"
+      anchorPosition={position}
+      onClose={onClose}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <MenuItem
+        onClick={() => {
+          onClose()
+          onDelay()
+        }}
+      >
+        {t('proxies.page.actions.testNodeDelay')}
+      </MenuItem>
+      <MenuItem
+        disabled={!canTestSpeed || active !== null}
+        onClick={() => {
+          onClose()
+          onSpeed()
+        }}
+      >
+        {t('proxies.page.actions.testNodeSpeed')}
+      </MenuItem>
+    </Menu>
+  )
+}
 
 const StyledPrimary = styled('span')`
   font-size: 16px;

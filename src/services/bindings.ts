@@ -129,6 +129,20 @@ export const commands = {
   patchVergeConfig: (payload: IVerge_Deserialize) =>
     __TAURI_INVOKE<null>('patch_verge_config', { payload }),
   testDelay: (url: string) => __TAURI_INVOKE<number>('test_delay', { url }),
+  stopDownloadSpeed: (runId: number) =>
+    __TAURI_INVOKE<void>('stop_download_speed', { runId }),
+  testDownloadSpeed: (
+    url: string,
+    durationSecs: number,
+    maxBytes: number,
+    runId: number,
+  ) =>
+    __TAURI_INVOKE<number>('test_download_speed', {
+      url,
+      durationSecs,
+      maxBytes,
+      runId,
+    }),
   getAppDir: () => __TAURI_INVOKE<string>('get_app_dir'),
   copyIconFile: (path: string, iconInfo: IconInfo) =>
     __TAURI_INVOKE<string>('copy_icon_file', { path, iconInfo }),
@@ -403,6 +417,9 @@ export type IVerge_Deserialize = {
   auto_check_update?: boolean | null
   default_latency_test?: string | null
   default_latency_timeout?: number | null
+  default_speed_test?: string | null
+  speed_test_duration?: number | null
+  speed_test_max_bytes?: number | null
   enable_auto_delay_detection?: boolean | null
   /**  自动检测当前节点延迟的间隔（分钟） */
   auto_delay_detection_interval_minutes?: number | null
@@ -493,6 +510,9 @@ export type IVerge_Serialize = {
   auto_check_update: boolean | null
   default_latency_test: string | null
   default_latency_timeout: number | null
+  default_speed_test: string | null
+  speed_test_duration: number | null
+  speed_test_max_bytes: number | null
   enable_auto_delay_detection: boolean | null
   /**  自动检测当前节点延迟的间隔（分钟） */
   auto_delay_detection_interval_minutes: number | null

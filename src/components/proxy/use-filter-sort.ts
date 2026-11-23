@@ -1,3 +1,4 @@
+import speedManager from '@/services/speed'
 import delayManager from '@/services/delay'
 import { memberDetails } from '@/types/proxy-view'
 import { compareByDelay, DEFAULT_DELAY_TIMEOUT } from '@/utils/delay'
@@ -5,7 +6,7 @@ import { compileStringMatcher } from '@/utils/search-matcher'
 
 import type { ResolvedMemberOccurrence } from './use-render-list'
 
-export type ProxySortType = 0 | 1 | 2
+export type ProxySortType = 0 | 1 | 2 | 3
 
 export type ProxySearchState = {
   matchCase?: boolean
@@ -103,6 +104,15 @@ function sortProxies(
         delay: delayManager.getDelayFix(proxy.member, groupName),
       }))
       .sort((a, b) => compareByDelay(a.delay, b.delay, effectiveTimeout))
+      .map(({ proxy }) => proxy)
+  }
+  if (sortType === 3) {
+    return proxies
+      .map((proxy) => ({
+        proxy,
+        speed: speedManager.getSortSpeed(proxy.member.ref.name, groupName),
+      }))
+      .sort((a, b) => b.speed - a.speed)
       .map(({ proxy }) => proxy)
   }
   const list = proxies.slice()

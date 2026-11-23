@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from 'vitest'
 
+import speedManager from '@/services/speed'
 import delayManager from '@/services/delay'
 import { compareByDelay } from '@/utils/delay'
 
@@ -88,4 +89,17 @@ test('reads each occurrence once and observes cache updates and expiry on the ne
   expect(filterSort(list, 'expiry', '', 0)).toBe(list)
   filterSort(list, 'expiry', '', 2)
   expect(get).not.toHaveBeenCalled()
+})
+
+test('sorts measured downloads fastest first, keeping ties and unmeasured nodes stable', () => {
+  const group = 'speed-sort'
+  const members = Array.from({ length: 6 }, (_, i) => node(i, 20))
+  speedManager.setSpeed('1', group, 10)
+  speedManager.setSpeed('2', group, 30)
+  speedManager.setSpeed('3', group, 0, true)
+  speedManager.setSpeed('4', group, -2)
+  speedManager.setSpeed('5', group, 10)
+  expect(
+    filterSort(members, group, '', 3).map((item) => item.memberIndex),
+  ).toEqual([2, 1, 5, 0, 3, 4])
 })

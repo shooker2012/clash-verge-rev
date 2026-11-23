@@ -134,6 +134,13 @@ pub struct IVerge {
 
     pub default_latency_timeout: Option<i16>,
 
+    #[specta(type = Option<std::string::String>)]
+    pub default_speed_test: Option<String>,
+
+    pub speed_test_duration: Option<u16>,
+
+    pub speed_test_max_bytes: Option<u64>,
+
     pub enable_auto_delay_detection: Option<bool>,
 
     /// 自动检测当前节点延迟的间隔（分钟）
@@ -502,6 +509,9 @@ impl IVerge {
         patch!(auto_check_update);
         patch!(default_latency_test);
         patch!(default_latency_timeout);
+        patch!(default_speed_test);
+        patch!(speed_test_duration);
+        patch!(speed_test_max_bytes);
         patch!(enable_auto_delay_detection);
         patch!(auto_delay_detection_interval_minutes);
         patch!(enable_builtin_enhanced);

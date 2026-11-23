@@ -418,7 +418,10 @@
         "autoDelayDetection": "Auto Delay Detection",
         "autoDelayDetectionInterval": "Auto Delay Detection Interval",
         "defaultLatencyTest": "Default Latency Test",
-        "defaultLatencyTimeout": "Default Latency Timeout"
+        "defaultLatencyTimeout": "Default Latency Timeout",
+        "defaultSpeedTest": "Default Speed Test URL",
+        "speedTestDuration": "Speed Test Duration",
+        "speedTestMaxBytes": "Maximum Download"
       },
       "tooltips": {
         "autoCloseConnections": "Terminate established connections when the proxy group selection or proxy mode changes",

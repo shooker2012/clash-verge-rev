@@ -33,6 +33,9 @@ export const MiscViewer = forwardRef<DialogRef>((props, ref) => {
     defaultLatencyTest: '',
     autoLogClean: 2,
     defaultLatencyTimeout: 10000,
+    defaultSpeedTest: 'https://speed.cloudflare.com/__down?bytes=10000000',
+    speedTestDuration: 10,
+    speedTestMaxBytes: 100,
   })
 
   useImperativeHandle(ref, () => ({
@@ -52,6 +55,13 @@ export const MiscViewer = forwardRef<DialogRef>((props, ref) => {
         defaultLatencyTest: verge?.default_latency_test || '',
         autoLogClean: verge?.auto_log_clean || 0,
         defaultLatencyTimeout: verge?.default_latency_timeout || 10000,
+        defaultSpeedTest:
+          verge?.default_speed_test ||
+          'https://speed.cloudflare.com/__down?bytes=10000000',
+        speedTestDuration: verge?.speed_test_duration || 10,
+        speedTestMaxBytes: Math.round(
+          (verge?.speed_test_max_bytes || 100 * 1024 * 1024) / 1024 / 1024,
+        ),
       })
     },
     close: () => setOpen(false),
@@ -72,6 +82,9 @@ export const MiscViewer = forwardRef<DialogRef>((props, ref) => {
           values.autoDelayDetectionIntervalMinutes,
         default_latency_test: values.defaultLatencyTest,
         default_latency_timeout: values.defaultLatencyTimeout,
+        default_speed_test: values.defaultSpeedTest,
+        speed_test_duration: values.speedTestDuration,
+        speed_test_max_bytes: values.speedTestMaxBytes * 1024 * 1024,
         auto_log_clean: values.autoLogClean as any,
       })
       setOpen(false)
@@ -113,6 +126,73 @@ export const MiscViewer = forwardRef<DialogRef>((props, ref) => {
               </MenuItem>
             ))}
           </Select>
+        </ListItem>
+
+        <ListItem sx={{ padding: '5px 2px' }}>
+          <ListItemText
+            primary={t('settings.modals.misc.fields.defaultSpeedTest')}
+          />
+          <TextField
+            size="small"
+            sx={{ width: 250 }}
+            value={values.defaultSpeedTest}
+            placeholder="https://speed.cloudflare.com/__down?bytes=10000000"
+            onChange={(e) =>
+              setValues((v) => ({ ...v, defaultSpeedTest: e.target.value }))
+            }
+          />
+        </ListItem>
+
+        <ListItem sx={{ padding: '5px 2px' }}>
+          <ListItemText
+            primary={t('settings.modals.misc.fields.speedTestDuration')}
+          />
+          <TextField
+            size="small"
+            type="number"
+            sx={{ width: 250 }}
+            value={values.speedTestDuration}
+            onChange={(e) =>
+              setValues((v) => ({
+                ...v,
+                speedTestDuration: parseInt(e.target.value),
+              }))
+            }
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    {t('shared.units.seconds')}
+                  </InputAdornment>
+                ),
+              },
+            }}
+          />
+        </ListItem>
+
+        <ListItem sx={{ padding: '5px 2px' }}>
+          <ListItemText
+            primary={t('settings.modals.misc.fields.speedTestMaxBytes')}
+          />
+          <TextField
+            size="small"
+            type="number"
+            sx={{ width: 250 }}
+            value={values.speedTestMaxBytes}
+            onChange={(e) =>
+              setValues((v) => ({
+                ...v,
+                speedTestMaxBytes: parseInt(e.target.value),
+              }))
+            }
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">MB</InputAdornment>
+                ),
+              },
+            }}
+          />
         </ListItem>
 
         <ListItem sx={{ padding: '5px 2px' }}>

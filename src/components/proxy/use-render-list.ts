@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useSyncExternalStore } from 'react'
 
 import { useRuntimeConfig } from '@/hooks/use-clash'
 import { useGroupsDelays } from '@/hooks/use-group-delays'
 import { useVerge } from '@/hooks/use-verge'
 import { useAppRefreshers, useProxiesData } from '@/providers/app-data-context'
+import speedManager from '@/services/speed'
 import delayManager, { type DelaySnapshot } from '@/services/delay'
 import {
   isInteractableMember,
@@ -66,6 +67,7 @@ type GroupCache = {
   latencyTimeout: number | undefined
   /// This group's own delays. Compared by identity so that a test settling in one group
   /// does not throw away every other group's sorted order.
+  speedRevision: number
   delays: DelaySnapshot | undefined
   items: IRenderItem[]
 }
@@ -222,6 +224,10 @@ export const useRenderList = (
   }, [isChainMode, proxyView, renderGroups, selectedGroup])
   const groupDelays = useGroupsDelays(renderedGroupNames)
 
+  const activeSpeedGroup = useSyncExternalStore(
+    speedManager.subscribe,
+    speedManager.activeGroup,
+  )
   const groupCacheRef = useRef<Map<string, GroupCache>>(new Map())
   const prevListRef = useRef<IRenderItem[]>([])
 
@@ -265,12 +271,15 @@ export const useRenderList = (
 
     const retList = renderGroups.flatMap((group) => {
       const headState = headStates[group.name] || DEFAULT_STATE
+      const speedRevision =
+        headState.sortType === 3 ? speedManager.revision(group.name) : 0
       const cached = cache.get(group.name)
       if (
         cached &&
         cached.now === group.now &&
         cached.members === group.members &&
         cached.headState === headState &&
+        cached.speedRevision === speedRevision &&
         cached.col === col &&
         cached.latencyTimeout === latencyTimeout &&
         cached.delays === groupDelays.get(group.name)
@@ -337,6 +346,7 @@ export const useRenderList = (
         headState,
         col,
         latencyTimeout: latencyTimeout!,
+        speedRevision,
         delays: groupDelays.get(group.name),
         items: ret,
       })
@@ -355,6 +365,7 @@ export const useRenderList = (
     prevListRef.current = filtered
     return filtered
   }, [
+    activeSpeedGroup,
     chainOccurrences,
     col,
     groupDelays,

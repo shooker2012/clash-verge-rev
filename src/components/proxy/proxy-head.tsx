@@ -2,6 +2,7 @@ import {
   AccessTimeRounded,
   MyLocationRounded,
   NetworkCheckRounded,
+  SpeedRounded,
   SearchOffRounded,
   SearchRounded,
   VisibilityRounded,
@@ -16,12 +17,17 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { BaseSearchBox } from '@/components/base'
+import StopRounded from '@mui/icons-material/StopRounded'
+import DownloadRounded from '@mui/icons-material/DownloadRounded'
+import { useSyncExternalStore } from 'react'
+import speedManager from '@/services/speed'
 import { useVerge } from '@/hooks/use-verge'
 import delayManager from '@/services/delay'
 import { showNotice } from '@/services/notice-service'
 import { debugLog } from '@/utils/debug'
 import { isValidUrl } from '@/utils/network'
 
+import { SpeedProgress } from './speed-progress'
 import type { ProxySortType } from './use-filter-sort'
 import type { HeadState } from './use-head-state'
 
@@ -32,6 +38,7 @@ interface Props {
   headState: HeadState
   onLocation: () => void
   onCheckDelay: () => void
+  onCheckSpeed: () => void
   onHeadState: (val: Partial<HeadState>) => void
 }
 
@@ -45,6 +52,7 @@ export const ProxyHead = ({
   onHeadState,
   onLocation,
   onCheckDelay,
+  onCheckSpeed,
 }: Props) => {
   const {
     showType,
@@ -66,6 +74,11 @@ export const ProxyHead = ({
     return () => clearTimeout(timer)
   }, [])
 
+  const activeGroup = useSyncExternalStore(
+    speedManager.subscribe,
+    speedManager.activeGroup,
+  )
+  const testing = activeGroup === groupName
   const { verge } = useVerge()
   const defaultLatencyUrl =
     verge?.default_latency_test?.trim() ||
@@ -85,6 +98,21 @@ export const ProxyHead = ({
       >
         <MyLocationRounded />
       </IconButton>
+
+      <IconButton
+        size="small"
+        color="inherit"
+        disabled={activeGroup !== null && !testing}
+        title={
+          testing
+            ? t('proxies.page.tooltips.stopSpeed')
+            : t('proxies.page.tooltips.speedCheck')
+        }
+        onClick={testing ? () => void speedManager.stop() : onCheckSpeed}
+      >
+        {testing ? <StopRounded /> : <SpeedRounded />}
+      </IconButton>
+      <SpeedProgress group={groupName} />
 
       <IconButton
         size="small"
@@ -115,14 +143,16 @@ export const ProxyHead = ({
             t('proxies.page.tooltips.sortDefault'),
             t('proxies.page.tooltips.sortDelay'),
             t('proxies.page.tooltips.sortName'),
+            t('proxies.page.tooltips.sortSpeed'),
           ][sortType]
         }
         onClick={() =>
-          onHeadState({ sortType: ((sortType + 1) % 3) as ProxySortType })
+          onHeadState({ sortType: ((sortType + 1) % 4) as ProxySortType })
         }
       >
-        {sortType !== 1 && sortType !== 2 && <SortRounded />}
+        {sortType === 0 && <SortRounded />}
         {sortType === 1 && <AccessTimeRounded />}
+        {sortType === 3 && <DownloadRounded />}
         {sortType === 2 && <SortByAlphaRounded />}
       </IconButton>
 

@@ -189,3 +189,29 @@ pub async fn test_delay(url: String) -> anyhow::Result<u32> {
     .await
     .unwrap_or(Ok(10000u32))
 }
+
+/// Download data through the currently selected mihomo proxy and return bytes/sec.
+#[tracing::instrument(skip_all, level = "trace", fields(url = %url))]
+pub async fn test_download_speed(url: String, duration_secs: u64, max_bytes: u64) -> anyhow::Result<u64> {
+    use std::time::Duration;
+    use tokio::time::Instant;
+
+    let port = MixedPort::desired().await;
+    let client = reqwest::Client::builder()
+        .proxy(reqwest::Proxy::all(format!("http://127.0.0.1:{port}"))?)
+        .connect_timeout(Duration::from_secs(10))
+        .build()?;
+    let mut response = client.get(url.as_str()).send().await?.error_for_status()?;
+    let start = Instant::now();
+    let duration = Duration::from_secs(duration_secs.max(1));
+    let mut bytes = 0u64;
+
+    while start.elapsed() < duration && bytes < max_bytes {
+        let chunk = tokio::time::timeout(Duration::from_secs(10), response.chunk()).await??;
+        let Some(chunk) = chunk else { break };
+        bytes = bytes.saturating_add(chunk.len() as u64);
+    }
+
+    let elapsed = start.elapsed().as_secs_f64().max(0.001);
+    Ok((bytes as f64 / elapsed) as u64)
+}

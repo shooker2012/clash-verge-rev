@@ -14,7 +14,9 @@ import { useTranslation } from 'react-i18next'
 
 import { BaseLoading } from '@/components/base'
 import { useProxyDelayState } from '@/hooks/use-proxy-delay-state'
+import { useProxySpeedState } from '@/hooks/use-proxy-speed-state'
 import delayManager from '@/services/delay'
+import speedManager from '@/services/speed'
 import {
   memberDetails,
   type ProxyGroupView,
@@ -27,6 +29,7 @@ interface Props {
   selected: boolean
   showType?: boolean
   sx?: SxProps<Theme>
+  onNodeMenu: (event: React.MouseEvent, member: ResolvedProxyMember) => void
   onClick?: (member: ResolvedProxyMember) => void
 }
 
@@ -62,6 +65,7 @@ export const ProxyItem = (props: Props) => {
     member,
     group.name,
   )
+  const speedState = useProxySpeedState(member, group.name)
 
   return (
     <ListItem sx={sx}>
@@ -69,7 +73,16 @@ export const ProxyItem = (props: Props) => {
         dense
         disabled={unresolved}
         selected={!unresolved && selected}
-        onClick={unresolved ? undefined : () => onClick?.(member)}
+        onContextMenu={
+          isPreset ? undefined : (event) => props.onNodeMenu(event, member)
+        }
+        onClick={
+          unresolved
+            ? undefined
+            : (event) => {
+                if (event.button === 0) onClick?.(member)
+              }
+        }
         sx={[
           { borderRadius: 1 },
           ({ palette: { mode, primary } }) => {
@@ -177,6 +190,16 @@ export const ProxyItem = (props: Props) => {
               })}
             >
               {delayManager.formatDelay(delayValue, timeout)}
+            </Widget>
+          )}
+
+          {!unresolved && speedState.status && (
+            <Widget
+              sx={{ color: speedManager.formatSpeedColor(speedState.status) }}
+            >
+              {speedState.status === 'measured'
+                ? speedManager.formatSpeed(speedState.speed)
+                : t(`proxies.page.speed.${speedState.status}`)}
             </Widget>
           )}
 

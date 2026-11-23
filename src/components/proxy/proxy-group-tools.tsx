@@ -1,6 +1,7 @@
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded'
 import MyLocationRounded from '@mui/icons-material/MyLocationRounded'
 import NetworkCheckRounded from '@mui/icons-material/NetworkCheckRounded'
+import SpeedRounded from '@mui/icons-material/SpeedRounded'
 import SearchOffRounded from '@mui/icons-material/SearchOffRounded'
 import SearchRounded from '@mui/icons-material/SearchRounded'
 import SortByAlphaRounded from '@mui/icons-material/SortByAlphaRounded'
@@ -15,6 +16,10 @@ import { memo, useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { useTranslation } from 'react-i18next'
 
+import StopRounded from '@mui/icons-material/StopRounded'
+import DownloadRounded from '@mui/icons-material/DownloadRounded'
+import { useSyncExternalStore } from 'react'
+import speedManager from '@/services/speed'
 import { useVerge } from '@/hooks/use-verge'
 import delayManager from '@/services/delay'
 import { showNotice } from '@/services/notice-service'
@@ -22,6 +27,7 @@ import { isValidUrl } from '@/utils/network'
 
 import { BaseSearchBox, type SearchState } from '../base'
 
+import { SpeedProgress } from './speed-progress'
 import type { ProxySortType } from './use-filter-sort'
 import type { HeadState } from './use-head-state'
 
@@ -33,6 +39,7 @@ interface Props {
   headState: HeadState
   onLocation: () => void
   onCheckDelay: () => void
+  onCheckSpeed: () => void
   onHeadState: (val: Partial<HeadState>) => void
 }
 
@@ -44,6 +51,7 @@ export const ProxyGroupTools = memo(function ProxyGroupTools(props: Props) {
     groupName,
     headState,
     onCheckDelay,
+    onCheckSpeed,
     onHeadState,
     onLocation,
   } = props
@@ -61,6 +69,11 @@ export const ProxyGroupTools = memo(function ProxyGroupTools(props: Props) {
 
   const { t } = useTranslation()
 
+  const activeGroup = useSyncExternalStore(
+    speedManager.subscribe,
+    speedManager.activeGroup,
+  )
+  const testing = activeGroup === groupName
   const { verge } = useVerge()
   const defaultLatencyUrl =
     verge?.default_latency_test?.trim() ||
@@ -165,6 +178,30 @@ export const ProxyGroupTools = memo(function ProxyGroupTools(props: Props) {
       <IconButton
         size="small"
         color="inherit"
+        disabled={activeGroup !== null && !testing}
+        title={
+          testing
+            ? t('proxies.page.tooltips.stopSpeed')
+            : t('proxies.page.tooltips.speedCheck')
+        }
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (testing) void speedManager.stop()
+          else onCheckSpeed()
+        }}
+      >
+        {testing ? (
+          <StopRounded fontSize="inherit" />
+        ) : (
+          <SpeedRounded fontSize="inherit" />
+        )}
+      </IconButton>
+      <SpeedProgress group={groupName} />
+
+      <IconButton
+        size="small"
+        color="inherit"
         title={t('proxies.page.tooltips.delayCheck')}
         onClick={(e) => {
           e.preventDefault()
@@ -194,6 +231,7 @@ export const ProxyGroupTools = memo(function ProxyGroupTools(props: Props) {
             t('proxies.page.tooltips.sortDefault'),
             t('proxies.page.tooltips.sortDelay'),
             t('proxies.page.tooltips.sortName'),
+            t('proxies.page.tooltips.sortSpeed'),
           ][sortType]
         }
         onClick={(e) => {
@@ -203,12 +241,13 @@ export const ProxyGroupTools = memo(function ProxyGroupTools(props: Props) {
             // eslint-disable-next-line @eslint-react/dom-no-flush-sync
             flushSync(() => onHeadState({ open: true }))
           onHeadState({
-            sortType: ((sortType + 1) % 3) as ProxySortType,
+            sortType: ((sortType + 1) % 4) as ProxySortType,
           })
         }}
       >
-        {sortType !== 1 && sortType !== 2 && <SortRounded fontSize="inherit" />}
+        {sortType === 0 && <SortRounded fontSize="inherit" />}
         {sortType === 1 && <AccessTimeRounded fontSize="inherit" />}
+        {sortType === 3 && <DownloadRounded fontSize="inherit" />}
         {sortType === 2 && <SortByAlphaRounded fontSize="inherit" />}
       </IconButton>
 

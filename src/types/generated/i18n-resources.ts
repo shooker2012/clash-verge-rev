@@ -522,6 +522,8 @@ export interface TranslationResources {
           connect: string
           connecting: string
           disconnect: string
+          testNodeDelay: string
+          testNodeSpeed: string
           toggleChain: string
         }
         chain: {
@@ -591,6 +593,19 @@ export interface TranslationResources {
           select: string
           title: string
         }
+        speed: {
+          delay: string
+          download: string
+          failed: string
+          finished: string
+          queued: string
+          skipDelay: string
+          skippedCount: string
+          skipStopped: string
+          stopped: string
+          stopping: string
+          testing: string
+        }
         title: {
           chainMode: string
           default: string
@@ -605,6 +620,9 @@ export interface TranslationResources {
           sortDefault: string
           sortDelay: string
           sortName: string
+          sortSpeed: string
+          speedCheck: string
+          stopSpeed: string
         }
       }
     }
@@ -1125,8 +1143,11 @@ export interface TranslationResources {
             autoLogClean: string
             defaultLatencyTest: string
             defaultLatencyTimeout: string
+            defaultSpeedTest: string
             enableBuiltinEnhanced: string
             proxyLayoutColumns: string
+            speedTestDuration: string
+            speedTestMaxBytes: string
           }
           options: {
             autoLogClean: {
@@ -1589,6 +1610,7 @@ export interface TranslationResources {
           noDisney: string
           originalsOnly: string
           pending: string
+          risky: string
           unsupportedRegion: string
           yes: string
         }
