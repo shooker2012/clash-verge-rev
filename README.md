@@ -43,6 +43,10 @@
 Get-Help .\scripts\Sync-UpstreamRelease.ps1 -Full
 ```
 
+## macOS 构建
+
+使用 GitHub Actions 手动构建 Apple Silicon 和 Intel 安装包，操作步骤见 [macOS 构建说明](./docs/BUILD_MACOS.md)。
+
 ## 开发
 
 项目开发环境和完整构建说明请参考上游文档：

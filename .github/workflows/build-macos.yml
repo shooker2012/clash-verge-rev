@@ -1,0 +1,126 @@
+name: Build macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: 'Source branch, tag or commit (empty = selected workflow commit)'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  HUSKY: '0'
+  CARGO_INCREMENTAL: '0'
+  NODE_OPTIONS: '--max-old-space-size=4096'
+
+jobs:
+  build:
+    name: macOS ${{ matrix.arch }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            target: aarch64-apple-darwin
+            arch: arm64
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+            arch: x64
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      BUILD_TARGET: ${{ matrix.target }}
+      BUILD_ARCH: ${{ matrix.arch }}
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref || github.sha }}
+          persist-credentials: false
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@1.99.1
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: fork-macos-${{ matrix.target }}
+          workspaces: '. -> target'
+
+      - name: Install Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '26.13.0'
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          run_install: false
+
+      - name: Install dependencies and prepare platform resources
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm run prebuild "$BUILD_TARGET"
+
+      - name: Configure ad-hoc signing and disable updater artifacts
+        run: |
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from 'node:fs';
+          import { join } from 'node:path';
+          writeFileSync(join(process.env.RUNNER_TEMP, 'fork-macos.json'), JSON.stringify({
+            bundle: {
+              createUpdaterArtifacts: false,
+              macOS: { signingIdentity: '-' }
+            }
+          }));
+          NODE
+
+      - name: Build DMG
+        run: pnpm build --target "$BUILD_TARGET" --bundles dmg --config "$RUNNER_TEMP/fork-macos.json" -- --locked
+
+      - name: Collect installer and build information
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          dmgs=(target/"$BUILD_TARGET"/release/bundle/dmg/*.dmg)
+          if [[ ${#dmgs[@]} -ne 1 ]]; then
+            echo "Expected one DMG, found ${#dmgs[@]}" >&2
+            exit 1
+          fi
+          version=$(node -p "require('./package.json').version")
+          sha=$(git rev-parse HEAD)
+          output="$RUNNER_TEMP/macos-artifacts"
+          mkdir -p "$output"
+          filename="Clash-Verge-${version}-fork-${sha:0:8}-macos-${BUILD_ARCH}.dmg"
+          cp "${dmgs[0]}" "$output/$filename"
+          {
+            printf 'Repository: %s\n' "$GITHUB_REPOSITORY"
+            printf 'Source commit: %s\n' "$sha"
+            printf 'App version: %s\n' "$version"
+            printf 'Target: %s\n' "$BUILD_TARGET"
+            printf 'Workflow run: %s/%s/actions/runs/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+            printf 'Signing: ad-hoc; not notarized.\n'
+            printf 'Updates: the app still checks upstream releases; official updates replace fork features.\n'
+            rustc --version
+            node --version
+            pnpm --version
+          } > "$output/BUILD-INFO.txt"
+          (cd "$output" && shasum -a 256 "$filename" > SHA256SUMS.txt)
+          cat "$output/BUILD-INFO.txt" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v7
+        with:
+          name: clash-verge-macos-${{ matrix.arch }}
+          path: ${{ runner.temp }}/macos-artifacts/*
+          if-no-files-found: error
+          retention-days: 14
